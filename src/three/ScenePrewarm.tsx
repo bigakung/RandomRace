@@ -3,8 +3,11 @@ import { useEffect } from 'react'
 import type { Object3D } from 'three'
 
 type ScenePrewarmProps = {
-  /** Called once the shaders are compiled and one frame has uploaded geometry and textures. */
-  onDone: () => void
+  /**
+   * Called with true once the shaders are compiled and one frame has uploaded geometry and
+   * textures, or with false if that failed.
+   */
+  onDone: (warmed: boolean) => void
 }
 
 /**
@@ -36,9 +39,11 @@ export function ScenePrewarm({ onDone }: ScenePrewarmProps) {
       .then(() => {
         if (cancelled) return
         gl.render(scene, camera)
-        onDone()
+        onDone(true)
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (!cancelled) onDone(false)
+      })
 
     return () => {
       cancelled = true

@@ -37,7 +37,14 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
   // that, or once any Race has run, it is simply hidden between Races.
   const [warm, setWarm] = useState(active)
   if (active && !warm) setWarm(true)
-  const markWarm = useCallback(() => setWarm(true), [])
+  // Changing the key rebuilds the scene with a fresh renderer and GL context.
+  const [sceneKey, setSceneKey] = useState(0)
+  const finishPrewarm = useCallback((warmed: boolean) => {
+    setWarm(true)
+    // A failed warm-up may leave the renderer stuck part-way through a frame, so start over
+    // with a fresh one; it is then built when the Race starts, as without pre-warm.
+    if (!warmed) setSceneKey((key) => key + 1)
+  }, [])
   const prewarming = !active && !warm && renderer === '3d'
 
   // The scene only follows the Roster during a Race, so typing names never rebuilds it.
@@ -59,7 +66,6 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
   // (GPU reset, backgrounded phone). Only a loss during a Race needs 2D; between Races the
   // scene is rebuilt with a fresh context and warmed again. The listener is registered once,
   // so it reads `active` through a ref.
-  const [sceneKey, setSceneKey] = useState(0)
   const activeRef = useRef(active)
   useEffect(() => {
     activeRef.current = active
@@ -117,7 +123,7 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
                 reducedMotion={reducedMotion}
                 active={active}
                 prewarm={prewarming}
-                onPrewarmed={markWarm}
+                onPrewarmed={finishPrewarm}
                 description={description}
                 onContextLost={handleContextLost}
               />

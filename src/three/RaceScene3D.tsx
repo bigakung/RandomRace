@@ -1,6 +1,6 @@
 import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Roster } from '../features/picker/roster'
 import type { PickerSession } from '../features/session/pickerSession'
 import type { ThemeId } from '../themes/registry'
@@ -27,7 +27,8 @@ type RaceScene3DProps = {
   active: boolean
   /** Compile the shaders and draw one hidden frame now, so the first Race starts without a wait. */
   prewarm: boolean
-  onPrewarmed: () => void
+  /** Called with false when the warm-up failed and this renderer should not be trusted. */
+  onPrewarmed: (warmed: boolean) => void
   description: string
   onContextLost: () => void
 }
@@ -52,6 +53,17 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, a
     if (wrapper.current) wrapper.current.dataset.fresh = 'true'
   }, [])
 
+  // R3F forces a context loss when it disposes an unmounted scene; that is not a real loss and
+  // must not reach the stage, which would rebuild the scene again. A layout effect, because the
+  // Canvas disposes its renderer in its own layout cleanup, which runs after this parent's.
+  const unmounted = useRef(false)
+  useLayoutEffect(() => {
+    unmounted.current = false
+    return () => {
+      unmounted.current = true
+    }
+  }, [])
+
   if (!lighting) return null
 
   return (
@@ -65,7 +77,7 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, a
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (event) => {
             event.preventDefault()
-            onContextLost()
+            if (!unmounted.current) onContextLost()
           })
         }}
       >
