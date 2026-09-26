@@ -1,0 +1,2 @@
+# Keep LF everywhere (the index already is) regardless of core.autocrlf on Windows.
+* text=auto eol=lf
