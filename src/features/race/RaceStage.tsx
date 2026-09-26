@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { copy } from '../../copy/th'
 import type { ThemeId } from '../../themes/registry'
@@ -17,7 +17,8 @@ type RaceStageProps = {
   reducedMotion: boolean
   /**
    * False between Races. The stage stays mounted (hidden) after the first Race so the 3D
-   * renderer — and its compiled shaders — are reused instead of rebuilt every Race.
+   * renderer — and its compiled shaders — are reused instead of rebuilt every Race. It is
+   * also mounted inactive before the first Race to pre-warm the 3D scene.
    */
   active: boolean
 }
@@ -30,6 +31,18 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
   const canSkip = state.phase === 'countdown' || state.phase === 'racing'
   const description = copy.raceLabel(state.roster.length)
   const skipButton = useRef<HTMLButtonElement>(null)
+
+  // Mounted before the first Race, the 3D scene first renders one frame laid out at full size
+  // but invisible (a display:none canvas has no size, so nothing would be created). After
+  // that, or once any Race has run, it is simply hidden between Races.
+  const [warm, setWarm] = useState(active)
+  if (active && !warm) setWarm(true)
+  const markWarm = useCallback(() => setWarm(true), [])
+  const prewarming = !active && !warm && renderer === '3d'
+
+  // The scene only follows the Roster during a Race, so typing names never rebuilds it.
+  const [sceneRoster, setSceneRoster] = useState(state.roster)
+  if (active && sceneRoster !== state.roster) setSceneRoster(state.roster)
 
   // The Start button is gone once the Race begins; give keyboard users the one control that remains.
   useEffect(() => {
@@ -52,7 +65,13 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
   }, [canSkip, session])
 
   return (
-    <section className="race" aria-labelledby="race-title" hidden={!active}>
+    <section
+      className={prewarming ? 'race race--prewarm' : 'race'}
+      aria-labelledby="race-title"
+      hidden={!active && !prewarming}
+      aria-hidden={prewarming || undefined}
+      inert={prewarming}
+    >
       <h2 id="race-title" className="race__title">
         {copy.sceneTitle}
       </h2>
@@ -74,10 +93,12 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
             >
               <RaceScene3D
                 session={session}
-                roster={state.roster}
+                roster={sceneRoster}
                 themeId={themeId}
                 reducedMotion={reducedMotion}
                 active={active}
+                prewarm={prewarming}
+                onPrewarmed={markWarm}
                 description={description}
                 onContextLost={fallBackTo2D}
               />

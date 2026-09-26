@@ -12,6 +12,7 @@ import { FinishGate } from './scene/FinishGate'
 import { River } from './scene/River'
 import { SceneLighting } from './scene/SceneLighting'
 import { SkyDome } from './scene/SkyDome'
+import { ScenePrewarm } from './ScenePrewarm'
 import { sceneThemes } from './sceneThemes'
 import { SessionInvalidator } from './SessionInvalidator'
 import { VehicleFleet } from './vehicles/VehicleFleet'
@@ -24,12 +25,15 @@ type RaceScene3DProps = {
   reducedMotion: boolean
   /** False between Races: the scene stays mounted but stops rendering entirely. */
   active: boolean
+  /** Compile the shaders and draw one hidden frame now, so the first Race starts without a wait. */
+  prewarm: boolean
+  onPrewarmed: () => void
   description: string
   onContextLost: () => void
 }
 
 /** The 3D Race. It only reads Race progress from the session and never affects the outcome (ADR-0002). */
-export default function RaceScene3D({ session, roster, themeId, reducedMotion, active, description, onContextLost }: RaceScene3DProps) {
+export default function RaceScene3D({ session, roster, themeId, reducedMotion, active, prewarm, onPrewarmed, description, onContextLost }: RaceScene3DProps) {
   const theme = sceneThemes[themeId]
   const lighting = theme.config.lighting[theme.config.defaultTimeOfDay] ?? theme.config.lighting.sunset
   const [quality, setQuality] = useState(() => chooseQuality(readDeviceSignals()))
@@ -101,6 +105,8 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, a
           particleCount={reducedMotion ? 0 : settings.celebrationParticles}
           still={reducedMotion}
         />
+        {/* Last, so every scene object above is mounted before the shaders are compiled. */}
+        {prewarm && <ScenePrewarm onDone={onPrewarmed} />}
       </Canvas>
     </div>
   )

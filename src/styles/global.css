@@ -83,6 +83,15 @@ body {
   display: none;
 }
 
+/* Before the first Race: laid out at full size so the 3D scene can pre-warm, but invisible
+   and out of the page flow. */
+.race--prewarm {
+  position: fixed;
+  inset: 0 0 auto;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .race__title {
   margin: 0;
   text-align: center;
