@@ -1,0 +1,3 @@
+# Winner is drawn before the Race and the animation is a pre-computed plan
+
+The Winner is drawn with `crypto.getRandomValues` (rejection sampling, independent every Race) before the countdown starts; the Race Engine then builds a time-based plan for every Lane that guarantees the Winner crosses the finish line first at exactly the Race Duration. The animation never decides the outcome, so frame rate, tab throttling or device speed cannot affect fairness. For the same reason there is deliberately no "cancel" during a Race — only "skip to result" — because cancel-and-restart would let a user re-roll after seeing who is leading.
