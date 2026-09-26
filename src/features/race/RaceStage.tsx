@@ -55,6 +55,24 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
     setFellBack(true)
   }
 
+  // The scene's GL context lives for the rest of the page, and browsers reclaim idle contexts
+  // (GPU reset, backgrounded phone). Only a loss during a Race needs 2D; between Races the
+  // scene is rebuilt with a fresh context and warmed again. The listener is registered once,
+  // so it reads `active` through a ref.
+  const [sceneKey, setSceneKey] = useState(0)
+  const activeRef = useRef(active)
+  useEffect(() => {
+    activeRef.current = active
+  }, [active])
+  const handleContextLost = useCallback(() => {
+    if (activeRef.current) {
+      fallBackTo2D()
+      return
+    }
+    setWarm(false)
+    setSceneKey((key) => key + 1)
+  }, [])
+
   useEffect(() => {
     if (!canSkip) return
     function handleKeyDown(event: KeyboardEvent) {
@@ -92,6 +110,7 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
               }
             >
               <RaceScene3D
+                key={sceneKey}
                 session={session}
                 roster={sceneRoster}
                 themeId={themeId}
@@ -100,7 +119,7 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
                 prewarm={prewarming}
                 onPrewarmed={markWarm}
                 description={description}
-                onContextLost={fallBackTo2D}
+                onContextLost={handleContextLost}
               />
             </Suspense>
           </ErrorBoundary>
