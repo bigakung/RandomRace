@@ -32,6 +32,7 @@ export function RaceCamera({ session, laneCount, still }: { session: PickerSessi
   const center = useRef<number | null>(null)
   const zoom = useRef(COUNTDOWN_PULL_BACK)
   const lookZ = useRef<number | null>(null)
+  const lastPhase = useRef<string | null>(null)
   const { laneZ } = useMemo(() => laneLayout(laneCount), [laneCount])
 
   useEffect(() => {
@@ -52,6 +53,14 @@ export function RaceCamera({ session, laneCount, still }: { session: PickerSessi
     const now = performance.now()
     session.laneProgress(now, progress.current)
     const { phase, winner } = session.getState()
+    // The scene is reused across Races: start each new countdown from a fresh framing rather
+    // than gliding in from where the previous Race ended.
+    if (phase === 'countdown' && lastPhase.current !== 'countdown') {
+      center.current = null
+      lookZ.current = null
+      zoom.current = COUNTDOWN_PULL_BACK
+    }
+    lastPhase.current = phase
     let leader = 0
     for (let lane = 0; lane < progress.current.length; lane += 1) leader = Math.max(leader, progress.current[lane] ?? 0)
     const nearFinish = phase === 'finished' || leader >= NEAR_FINISH_PROGRESS

@@ -27,6 +27,10 @@ export function App() {
   // Fetch the 3D Race while names are being typed so it is ready when the Race starts.
   useEffect(preloadRaceScene3D, [])
   const racing = state.phase === 'countdown' || state.phase === 'racing' || state.phase === 'finished'
+  // Once the first Race starts, the Race stage stays mounted (hidden between Races) so the 3D
+  // renderer and its compiled shaders are reused rather than rebuilt for every Race.
+  const [raceStageMounted, setRaceStageMounted] = useState(false)
+  if (racing && !raceStageMounted) setRaceStageMounted(true)
 
   return (
     <main className={racing ? 'app app--race' : 'app'}>
@@ -40,7 +44,9 @@ export function App() {
       </header>
 
       {state.phase === 'input' && <PickerScreen state={state} session={session} focusRoster={focusRoster} />}
-      {racing && <RaceStage state={state} session={session} themeId={themeId} reducedMotion={reducedMotion} />}
+      {raceStageMounted && (
+        <RaceStage state={state} session={session} themeId={themeId} reducedMotion={reducedMotion} active={racing} />
+      )}
       {state.phase === 'result' && state.winner && (
         <ResultScreen
           winner={state.winner}

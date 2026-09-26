@@ -15,11 +15,16 @@ type RaceStageProps = {
   session: PickerSession
   themeId: ThemeId
   reducedMotion: boolean
+  /**
+   * False between Races. The stage stays mounted (hidden) after the first Race so the 3D
+   * renderer — and its compiled shaders — are reused instead of rebuilt every Race.
+   */
+  active: boolean
 }
 
 type Renderer = '3d' | '2d'
 
-export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageProps) {
+export function RaceStage({ state, session, themeId, reducedMotion, active }: RaceStageProps) {
   const [renderer, setRenderer] = useState<Renderer>(() => (isWebGLAvailable() ? '3d' : '2d'))
   const [fellBack, setFellBack] = useState(renderer === '2d')
   const canSkip = state.phase === 'countdown' || state.phase === 'racing'
@@ -27,7 +32,9 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
   const skipButton = useRef<HTMLButtonElement>(null)
 
   // The Start button is gone once the Race begins; give keyboard users the one control that remains.
-  useEffect(() => skipButton.current?.focus(), [])
+  useEffect(() => {
+    if (active) skipButton.current?.focus()
+  }, [active])
 
   // Both renderers read the same session clock, so switching mid-Race keeps the same Winner and timing.
   function fallBackTo2D() {
@@ -45,19 +52,22 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
   }, [canSkip, session])
 
   return (
-    <section className="race" aria-labelledby="race-title">
+    <section className="race" aria-labelledby="race-title" hidden={!active}>
       <h2 id="race-title" className="race__title">
         {copy.sceneTitle}
       </h2>
       <div className="race__stage">
         {/* The still 3D scene only renders on change, so something else must keep the clock moving. */}
-        {renderer === '3d' && reducedMotion && <SessionTicker session={session} />}
+        {active && renderer === '3d' && reducedMotion && <SessionTicker session={session} />}
         {renderer === '3d' ? (
-          <ErrorBoundary fallback={<RaceCanvas2D session={session} description={description} still={reducedMotion} />} onError={fallBackTo2D}>
+          <ErrorBoundary
+            fallback={active && <RaceCanvas2D session={session} description={description} still={reducedMotion} />}
+            onError={fallBackTo2D}
+          >
             <Suspense
               fallback={
                 <div className="race__loading">
-                  <SessionTicker session={session} />
+                  {active && <SessionTicker session={session} />}
                   {copy.loading3d}
                 </div>
               }
@@ -67,15 +77,17 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
                 roster={state.roster}
                 themeId={themeId}
                 reducedMotion={reducedMotion}
+                active={active}
                 description={description}
                 onContextLost={fallBackTo2D}
               />
             </Suspense>
           </ErrorBoundary>
         ) : (
-          <RaceCanvas2D session={session} description={description} still={reducedMotion} />
+          // The 2D canvas has nothing expensive to keep, so it only exists during a Race.
+          active && <RaceCanvas2D session={session} description={description} still={reducedMotion} />
         )}
-        {labelMode(state.roster.length) === 'number' && <LeaderBoard session={session} roster={state.roster} />}
+        {active && labelMode(state.roster.length) === 'number' && <LeaderBoard session={session} roster={state.roster} />}
         <div className="race__countdown" aria-live="assertive">
           {state.countdown !== null && (
             <span key={String(state.countdown)} className="race__countdown-value">

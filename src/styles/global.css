@@ -77,6 +77,12 @@ body {
   gap: 12px;
 }
 
+/* Kept mounted between Races (to reuse the 3D renderer); the display rule above would
+   otherwise override the hidden attribute. */
+.race[hidden] {
+  display: none;
+}
+
 .race__title {
   margin: 0;
   text-align: center;
@@ -106,6 +112,10 @@ body {
 .race__scene,
 .race__loading {
   background: linear-gradient(180deg, #3d5a8a 0%, #f7b267 60%, #3f7f73 100%);
+}
+
+.race__scene[data-fresh='false'] canvas {
+  opacity: 0;
 }
 
 .race__loading {

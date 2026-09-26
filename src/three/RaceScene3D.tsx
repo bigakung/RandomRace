@@ -1,6 +1,6 @@
 import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Roster } from '../features/picker/roster'
 import type { PickerSession } from '../features/session/pickerSession'
 import type { ThemeId } from '../themes/registry'
@@ -22,12 +22,14 @@ type RaceScene3DProps = {
   themeId: ThemeId
   /** Still scene: on-demand rendering, no waves, bobbing, flags, particles or camera moves. */
   reducedMotion: boolean
+  /** False between Races: the scene stays mounted but stops rendering entirely. */
+  active: boolean
   description: string
   onContextLost: () => void
 }
 
 /** The 3D Race. It only reads Race progress from the session and never affects the outcome (ADR-0002). */
-export default function RaceScene3D({ session, roster, themeId, reducedMotion, description, onContextLost }: RaceScene3DProps) {
+export default function RaceScene3D({ session, roster, themeId, reducedMotion, active, description, onContextLost }: RaceScene3DProps) {
   const theme = sceneThemes[themeId]
   const lighting = theme.config.lighting[theme.config.defaultTimeOfDay] ?? theme.config.lighting.sunset
   const [quality, setQuality] = useState(() => chooseQuality(readDeviceSignals()))
@@ -36,14 +38,24 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, d
 
   const animated = settings.animatedWater && !reducedMotion
 
+  // The canvas is reused across Races and still holds the last Race's final frame; keep it
+  // invisible from each activation until the new Race's first frame is drawn.
+  const wrapper = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!active && wrapper.current) wrapper.current.dataset.fresh = 'false'
+  }, [active])
+  const markFresh = useCallback(() => {
+    if (wrapper.current) wrapper.current.dataset.fresh = 'true'
+  }, [])
+
   if (!lighting) return null
 
   return (
-    <div className="race__scene" role="img" aria-label={description}>
+    <div ref={wrapper} className="race__scene" role="img" aria-label={description} data-fresh="false">
       <Canvas
         shadows={settings.shadows ? 'percentage' : false}
         dpr={[1, settings.maxPixelRatio]}
-        frameloop={reducedMotion ? 'demand' : 'always'}
+        frameloop={!active ? 'never' : reducedMotion ? 'demand' : 'always'}
         camera={{ fov: CAMERA_FOV, position: [0, 20, 40] }}
         gl={{ antialias: quality !== 'low', powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
@@ -57,7 +69,7 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, d
         <PerformanceMonitor onDecline={() => setQuality(lowerQuality)} />
         <color attach="background" args={[lighting.skyHorizon]} />
         <fog attach="fog" args={[lighting.fogColor, 90, 420]} />
-        {reducedMotion && <SessionInvalidator session={session} />}
+        <SessionInvalidator session={session} active={active} onDemand={reducedMotion} onFreshFrame={markFresh} />
         <RaceCamera session={session} laneCount={roster.length} still={reducedMotion} />
         <SkyDome lighting={lighting} />
         <SceneLighting lighting={lighting} shadows={settings.shadows} riverHalfWidth={riverHalfWidth} />
