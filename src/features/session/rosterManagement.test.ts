@@ -117,7 +117,8 @@ describe('PickerSession Roster management', () => {
 
     it('allows starting a Race with duplicate names', () => {
       const session = sessionWith('สมชาย\nสมชาย')
-      session.start(0)
+      session.start()
+      session.stageReady(0)
       expect(session.getState().phase).toBe('countdown')
     })
   })

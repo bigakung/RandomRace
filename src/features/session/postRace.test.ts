@@ -7,7 +7,8 @@ const RESULT_AT = COUNTDOWN_MS + DEFAULT_RACE_DURATION_MS + FINISH_HOLD_MS
 function sessionAtResult(rng?: Rng) {
   const session = createPickerSession(rng ? { rng } : {})
   session.addNames('สมชาย\nวิชัย\nมานะ\nนเรศ')
-  session.start(0)
+  session.start()
+  session.stageReady(0)
   session.tick(RESULT_AT)
   expect(session.getState().phase).toBe('result')
   return session
@@ -23,13 +24,14 @@ describe('after the Race', () => {
     const session = sessionAtResult({ nextUint32: () => value })
     expect(session.getState().winner?.number).toBe(1)
     value = 2
-    session.playAgain(RESULT_AT + 100)
+    session.playAgain()
     expect(session.getState().winner?.number).toBe(3)
   })
 
   it('Play Again returns to the countdown with the same Roster', () => {
     const session = sessionAtResult()
-    session.playAgain(RESULT_AT + 100)
+    session.playAgain()
+    session.stageReady(RESULT_AT + 100)
     const state = session.getState()
     expect(state.phase).toBe('countdown')
     expect(state.countdown).toBe(3)
@@ -42,7 +44,8 @@ describe('after the Race', () => {
     const session = sessionAtResult(createSeededRng(11))
     for (let round = 1; round <= 40; round += 1) {
       const startedAt = round * (RESULT_AT + 1000)
-      session.playAgain(startedAt)
+      session.playAgain()
+      session.stageReady(startedAt)
       session.tick(startedAt + RESULT_AT)
       expect(session.getState().phase).toBe('result')
       seen.add(session.getState().winner?.number ?? 0)
@@ -53,7 +56,8 @@ describe('after the Race', () => {
 
   it('Play Again runs a full Race again: the new Winner crosses first', () => {
     const session = sessionAtResult(createSeededRng(3))
-    session.playAgain(100_000)
+    session.playAgain()
+    session.stageReady(100_000)
     const winnerLane = (session.getState().winner?.number ?? 0) - 1
     const finish = 100_000 + COUNTDOWN_MS + DEFAULT_RACE_DURATION_MS
     session.tick(finish - 1)
@@ -83,7 +87,8 @@ describe('after the Race', () => {
     const session = createPickerSession()
     session.addNames('a\nb')
     session.setRaceDuration(5_000)
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     session.tick(COUNTDOWN_MS + 5_000 + FINISH_HOLD_MS)
     session.editNames()
     expect(session.getState().raceDurationMs).toBe(5_000)
@@ -92,11 +97,12 @@ describe('after the Race', () => {
   it('ignores post-Race actions before the result is shown', () => {
     const session = createPickerSession()
     session.addNames('a\nb')
-    session.playAgain(0)
+    session.playAgain()
     session.newRace()
     expect(session.getState()).toMatchObject({ phase: 'input' })
     expect(names(session)).toEqual(['a', 'b'])
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     session.editNames()
     session.newRace()
     expect(session.getState().phase).toBe('countdown')

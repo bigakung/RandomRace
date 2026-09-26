@@ -41,7 +41,7 @@ describe('PickerSession', () => {
 
   it('refuses to start with no Participants', () => {
     const session = createPickerSession()
-    session.start(0)
+    session.start()
     const state = session.getState()
     expect(state.phase).toBe('input')
     expect(state.winner).toBeNull()
@@ -51,24 +51,63 @@ describe('PickerSession', () => {
   it('refuses to start with one Participant', () => {
     const session = createPickerSession()
     session.addNames('สมชาย')
-    session.start(0)
+    session.start()
     expect(session.getState().phase).toBe('input')
     expect(session.getState().error).toEqual({ code: 'not-enough-participants' })
   })
 
   it('clears the error once a valid Roster is started', () => {
     const session = createPickerSession()
-    session.start(0)
+    session.start()
     session.addNames('สมชาย\nวิชัย')
-    session.start(0)
+    session.start()
     expect(session.getState().error).toBeNull()
+  })
+
+  it('draws the Winner immediately, entering preparing before the countdown clock starts', () => {
+    const session = createPickerSession()
+    session.addNames('สมชาย\nวิชัย')
+    session.start()
+    const state = session.getState()
+    expect(state.phase).toBe('preparing')
+    expect(state.countdown).toBeNull()
+    expect(state.winner).not.toBeNull()
+  })
+
+  it('ignores tick and laneProgress while preparing: nobody has moved yet', () => {
+    const session = createPickerSession()
+    session.addNames('สมชาย\nวิชัย')
+    session.start()
+    session.tick(50_000)
+    expect(session.getState().phase).toBe('preparing')
+    expect(session.laneProgress(50_000).every((p) => p === 0)).toBe(true)
+  })
+
+  it('starts the countdown clock only once stageReady is called', () => {
+    const session = createPickerSession()
+    session.addNames('สมชาย\nวิชัย')
+    session.start()
+    session.stageReady(1000)
+    expect(session.getState()).toMatchObject({ phase: 'countdown', countdown: 3 })
+    session.tick(1000)
+    expect(session.getState().countdown).toBe(3)
+    session.tick(2000)
+    expect(session.getState().countdown).toBe(2)
+  })
+
+  it('ignores stageReady outside preparing', () => {
+    const session = createPickerSession()
+    session.addNames('สมชาย\nวิชัย')
+    session.stageReady(0)
+    expect(session.getState().phase).toBe('input')
   })
 
   it.each([2, 5, 50])('draws exactly one Winner from a Roster of %i', (count) => {
     for (let seed = 0; seed < 50; seed += 1) {
       const session = createPickerSession({ rng: createSeededRng(seed) })
       session.addNames(namesOf(count))
-      session.start(0)
+      session.start()
+      session.stageReady(0)
       const { phase, winner, roster } = session.getState()
       expect(phase).toBe('countdown')
       const matches = roster.filter((p) => p === winner)
@@ -79,7 +118,7 @@ describe('PickerSession', () => {
   it('picks the Winner from the injected random source', () => {
     const session = createPickerSession({ rng: fixedRng(2) })
     session.addNames('สมชาย\nวิชัย\nมานะ\nนเรศ')
-    session.start(0)
+    session.start()
     expect(session.getState().winner).toMatchObject({ number: 3, name: 'มานะ' })
   })
 
@@ -90,7 +129,7 @@ describe('PickerSession', () => {
     for (let i = 0; i < draws; i += 1) {
       const session = createPickerSession({ rng })
       session.addNames('a\nb\nc\nd')
-      session.start(0)
+      session.start()
       const winner = session.getState().winner
       if (winner) counts[winner.number - 1] = (counts[winner.number - 1] ?? 0) + 1
     }

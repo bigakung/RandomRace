@@ -23,18 +23,32 @@ type RaceScene3DProps = {
   themeId: ThemeId
   /** Still scene: on-demand rendering, no waves, bobbing, flags, particles or camera moves. */
   reducedMotion: boolean
-  /** False between Races: the scene stays mounted but stops rendering entirely. */
+  /** Visible with the countdown/racing/finished chrome running; false during `preparing`, and
+   * between Races when the scene stays mounted but stops rendering entirely. */
   active: boolean
-  /** Compile the shaders and draw one hidden frame now, so the first Race starts without a wait. */
-  prewarm: boolean
-  /** Called with false when the warm-up failed and this renderer should not be trusted. */
-  onPrewarmed: (warmed: boolean) => void
+  /** True only during `preparing`: compile the shaders and draw one hidden frame, then report. */
+  preparing: boolean
+  /** The compiled frame is drawn; the session's countdown clock can start now (ADR-0003). */
+  onStageReady: () => void
+  /** The compile or that first render threw; this renderer should not be trusted for this Race. */
+  onPrepareFailed: () => void
   description: string
   onContextLost: () => void
 }
 
 /** The 3D Race. It only reads Race progress from the session and never affects the outcome (ADR-0002). */
-export default function RaceScene3D({ session, roster, themeId, reducedMotion, active, prewarm, onPrewarmed, description, onContextLost }: RaceScene3DProps) {
+export default function RaceScene3D({
+  session,
+  roster,
+  themeId,
+  reducedMotion,
+  active,
+  preparing,
+  onStageReady,
+  onPrepareFailed,
+  description,
+  onContextLost,
+}: RaceScene3DProps) {
   const theme = sceneThemes[themeId]
   const lighting = theme.config.lighting[theme.config.defaultTimeOfDay] ?? theme.config.lighting.sunset
   const [quality, setQuality] = useState(() => chooseQuality(readDeviceSignals()))
@@ -118,7 +132,7 @@ export default function RaceScene3D({ session, roster, themeId, reducedMotion, a
           still={reducedMotion}
         />
         {/* Last, so every scene object above is mounted before the shaders are compiled. */}
-        {prewarm && <ScenePrewarm onDone={onPrewarmed} />}
+        {preparing && <ScenePrewarm onDone={(warmed) => (warmed ? onStageReady() : onPrepareFailed())} />}
       </Canvas>
     </div>
   )

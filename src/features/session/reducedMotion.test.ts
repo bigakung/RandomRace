@@ -15,7 +15,8 @@ describe('reduced motion', () => {
     const session = reducedSession(1)
     const phases = new Set<SessionPhase>()
     session.subscribe(() => phases.add(session.getState().phase))
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     for (let now = 0; now <= COUNTDOWN_MS + FINISH_HOLD_MS; now += 16) session.tick(now)
     session.tick(COUNTDOWN_MS + FINISH_HOLD_MS)
     expect(phases.has('racing')).toBe(false)
@@ -27,15 +28,18 @@ describe('reduced motion', () => {
     const session = reducedSession(2)
     const countdowns: unknown[] = []
     session.subscribe(() => countdowns.push(session.getState().countdown))
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     for (let now = 0; now <= COUNTDOWN_MS; now += 16) session.tick(now)
     session.tick(COUNTDOWN_MS)
-    expect(countdowns).toEqual([3, 2, 1, null])
+    // start() itself notifies once, entering `preparing` with the countdown still null.
+    expect(countdowns).toEqual([null, 3, 2, 1, null])
   })
 
   it('shows the Winner at the finish line and every other boat short of it', () => {
     const session = reducedSession(3)
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     session.tick(COUNTDOWN_MS)
     expect(session.getState().phase).toBe('finished')
     const winnerLane = (session.getState().winner?.number ?? 0) - 1
@@ -53,7 +57,7 @@ describe('reduced motion', () => {
       const session = createPickerSession({ rng })
       session.setReducedMotion(true)
       session.addNames('a\nb\nc\nd')
-      session.start(0)
+      session.start()
       const winner = session.getState().winner
       if (winner) counts[winner.number - 1] = (counts[winner.number - 1] ?? 0) + 1
     }
@@ -62,10 +66,12 @@ describe('reduced motion', () => {
 
   it('applies to Play Again too, and can be switched off again', () => {
     const session = reducedSession(4)
-    session.start(0)
+    session.start()
+    session.stageReady(0)
     session.tick(COUNTDOWN_MS + FINISH_HOLD_MS)
     session.setReducedMotion(false)
-    session.playAgain(10_000)
+    session.playAgain()
+    session.stageReady(10_000)
     session.tick(10_000 + COUNTDOWN_MS + 1)
     expect(session.getState().phase).toBe('racing')
   })

@@ -14,7 +14,8 @@ function sessionWith(count: number, seed: number, durationMs?: number) {
   const session = createPickerSession({ rng: createSeededRng(seed) })
   session.addNames(Array.from({ length: count }, (_, i) => `p${i + 1}`).join('\n'))
   if (durationMs !== undefined) session.setRaceDuration(durationMs)
-  session.start(0)
+  session.start()
+  session.stageReady(0)
   return session
 }
 

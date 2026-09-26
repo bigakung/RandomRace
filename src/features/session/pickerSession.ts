@@ -17,7 +17,7 @@ export const RACE_DURATION_PRESETS_MS = [5_000, 10_000, 30_000, 60_000, 120_000,
 export type RaceDurationMs = (typeof RACE_DURATION_PRESETS_MS)[number]
 export const DEFAULT_RACE_DURATION_MS: RaceDurationMs = 10_000
 
-export type SessionPhase = 'input' | 'countdown' | 'racing' | 'finished' | 'result'
+export type SessionPhase = 'input' | 'preparing' | 'countdown' | 'racing' | 'finished' | 'result'
 
 export type Countdown = 3 | 2 | 1 | 'GO' | null
 
@@ -55,19 +55,30 @@ export type PickerSession = {
   clearRoster(): void
   /** Accepts only the preset Race Durations, and only before a Race starts. */
   setRaceDuration(durationMs: number): void
-  /** Draws the Winner and starts the countdown; refused with fewer than 2 Participants. */
-  start(now: number): void
+  /**
+   * Draws the Winner and enters `preparing`; refused with fewer than 2 Participants. The
+   * countdown clock does not start until the active renderer calls `stageReady` (ADR-0003).
+   */
+  start(): void
+  /**
+   * The active renderer can show something now: starts the countdown clock at `now`. Only has
+   * an effect during `preparing`; a renderer decides only *when*, never the outcome (ADR-0003).
+   */
+  stageReady(now: number): void
   /** Advances countdown → racing → finished → result. Notifies only when the phase or countdown changes. */
   tick(now: number): void
-  /** Jumps straight to finished with the already-drawn Winner. There is deliberately no cancel (ADR-0001). */
+  /**
+   * Jumps straight to finished with the already-drawn Winner, from `preparing`, `countdown` or
+   * `racing`. There is deliberately no cancel (ADR-0001).
+   */
   skip(now: number): void
   /**
    * The user prefers reduced motion: Races started from now on skip the Race animation and go
    * from the countdown straight to the finish. The draw is unchanged.
    */
   setReducedMotion(on: boolean): void
-  /** From the result: same Roster, a new independent draw, straight into the countdown. */
-  playAgain(now: number): void
+  /** From the result: same Roster, a new independent draw, into `preparing` again. */
+  playAgain(): void
   /** From the result: back to the Roster, every name kept. */
   editNames(): void
   /** From the result: clears the Roster for a new group (the UI confirms first). */
@@ -83,7 +94,8 @@ type PickerSessionOptions = {
 
 type RaceTiming = {
   plan: RacePlan
-  startedAt: number
+  /** Set by `stageReady`; null while `preparing`, before the countdown clock has started. */
+  startedAt: number | null
   finishedAt: number | null
   /** Reduced motion: go from the countdown straight to the finish, with no Race animation. */
   skipRace: boolean
@@ -120,14 +132,17 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
     update({ roster: toRoster(names), error: null, notice })
   }
 
-  /** Draws a fresh, independent Winner and plan, then starts the countdown. */
-  function beginRace(now: number) {
+  /**
+   * Draws a fresh, independent Winner and plan, then enters `preparing`. The countdown clock
+   * does not start yet — `stageReady` starts it once a renderer can show something (ADR-0003).
+   */
+  function beginRace() {
     const { roster } = state
     // The Winner is drawn before anything moves; the plan only visualises it (ADR-0001).
     const winnerIndex = selectWinner(roster, rng)
     const plan = createRacePlan({ laneCount: roster.length, winnerIndex, durationMs: state.raceDurationMs, rng })
-    race = { plan, startedAt: now, finishedAt: null, skipRace: reducedMotion }
-    update({ phase: 'countdown', countdown: 3, winner: roster[winnerIndex] ?? null, error: null, notice: null })
+    race = { plan, startedAt: null, finishedAt: null, skipRace: reducedMotion }
+    update({ phase: 'preparing', countdown: null, winner: roster[winnerIndex] ?? null, error: null, notice: null })
   }
 
   function finish(at: number) {
@@ -188,23 +203,29 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
       setNames([])
     },
 
-    start(now) {
+    start() {
       if (!editable()) return
       const { roster } = state
       if (roster.length < MIN_PARTICIPANTS) {
         update({ error: { code: 'not-enough-participants' } })
         return
       }
-      beginRace(now)
+      beginRace()
+    },
+
+    stageReady(now) {
+      if (!race || state.phase !== 'preparing') return
+      race.startedAt = now
+      update({ phase: 'countdown', countdown: 3 })
     },
 
     setReducedMotion(on) {
       reducedMotion = on
     },
 
-    playAgain(now) {
+    playAgain() {
       if (state.phase !== 'result') return
-      beginRace(now)
+      beginRace()
     },
 
     editNames() {
@@ -223,8 +244,12 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
       if (!race) return
       let { phase, countdown } = state
 
-      if (phase === 'countdown' || phase === 'racing') {
-        const elapsed = now - race.startedAt
+      // While `preparing`, or after a skip that happened during `preparing`, the countdown
+      // clock has not started (`startedAt` is null): there is nothing to advance yet, but a
+      // skip may already have moved to `finished`, and that still needs to reach `result`.
+      if (race.startedAt !== null && (phase === 'countdown' || phase === 'racing')) {
+        const startedAt = race.startedAt
+        const elapsed = now - startedAt
         const raceElapsed = elapsed - COUNTDOWN_MS
         if (elapsed < COUNTDOWN_MS) {
           phase = 'countdown'
@@ -235,7 +260,7 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
         } else {
           phase = 'finished'
           countdown = null
-          finish(race.startedAt + COUNTDOWN_MS + (race.skipRace ? 0 : race.plan.durationMs))
+          finish(startedAt + COUNTDOWN_MS + (race.skipRace ? 0 : race.plan.durationMs))
         }
       }
 
@@ -247,7 +272,8 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
     },
 
     skip(now) {
-      if (!race || (state.phase !== 'countdown' && state.phase !== 'racing')) return
+      if (!race) return
+      if (state.phase !== 'preparing' && state.phase !== 'countdown' && state.phase !== 'racing') return
       finish(now)
       update({ phase: 'finished', countdown: null })
     },
@@ -256,11 +282,16 @@ export function createPickerSession({ rng = createDefaultRng() }: PickerSessionO
       if (!race) return out ? ((out.length = 0), out) : []
       const { plan, startedAt } = race
       switch (state.phase) {
+        case 'preparing':
         case 'countdown':
+          // The countdown clock has not started (or not yet reached GO): every boat sits at
+          // the start line. This also covers a skip during `preparing` (`startedAt` still null).
           return plan.progressAt(0, out)
         case 'racing':
-          return plan.progressAt(now - startedAt - COUNTDOWN_MS, out)
+          // `startedAt` is always set by the time `racing` is reached (ADR-0003).
+          return plan.progressAt(now - (startedAt ?? now) - COUNTDOWN_MS, out)
         default:
+          // finished / result: including a skip from `preparing`, the Winner is at the line.
           return plan.progressAt(plan.durationMs, out)
       }
     },

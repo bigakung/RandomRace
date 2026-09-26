@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { copy } from '../../copy/th'
 import type { ThemeId } from '../../themes/registry'
@@ -15,46 +15,45 @@ type RaceStageProps = {
   session: PickerSession
   themeId: ThemeId
   reducedMotion: boolean
-  /**
-   * False between Races. The stage stays mounted (hidden) after the first Race so the 3D
-   * renderer — and its compiled shaders — are reused instead of rebuilt every Race. It is
-   * also mounted inactive before the first Race to pre-warm the 3D scene.
-   */
-  active: boolean
 }
 
 type Renderer = '3d' | '2d'
 
-export function RaceStage({ state, session, themeId, reducedMotion, active }: RaceStageProps) {
+/**
+ * If nothing calls `stageReady` within this long, the stage gives up on 3D for this Race and
+ * falls back to 2D itself (ADR-0003) — a compile that never resolves, or genuinely slow
+ * hardware, must not leave a Race stuck before it has even begun.
+ */
+const PREPARE_TIMEOUT_MS = 8000
+/** Delay before showing the loading message, so a fast `preparing` (Play Again, cached
+ * shaders) never flashes it. */
+const PREPARE_MESSAGE_DELAY_MS = 300
+
+/** The loading message shown while nothing can be displayed yet, with a text status for
+ * screen readers and an animated affordance so a longer wait doesn't read as stuck. */
+function StageLoading() {
+  return (
+    <div className="race__loading" role="status">
+      {copy.loading3d}
+      <span className="race__loading-dots" aria-hidden="true" />
+    </div>
+  )
+}
+
+export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageProps) {
   const [renderer, setRenderer] = useState<Renderer>(() => (isWebGLAvailable() ? '3d' : '2d'))
   const [fellBack, setFellBack] = useState(renderer === '2d')
-  const canSkip = state.phase === 'countdown' || state.phase === 'racing'
+  const preparing = state.phase === 'preparing'
+  // Visible with the countdown/racing/finished chrome running; the stage stays mounted (hidden)
+  // between Races and while `preparing` so the 3D renderer and its compiled shaders are reused.
+  const active = state.phase === 'countdown' || state.phase === 'racing' || state.phase === 'finished'
+  const shown = preparing || active
+  const canSkip = preparing || state.phase === 'countdown' || state.phase === 'racing'
   const description = copy.raceLabel(state.roster.length)
   const skipButton = useRef<HTMLButtonElement>(null)
 
-  // Mounted before the first Race, the 3D scene first renders one frame laid out at full size
-  // but invisible (a display:none canvas has no size, so nothing would be created). After
-  // that, or once any Race has run, it is simply hidden between Races.
-  const [warm, setWarm] = useState(active)
-  if (active && !warm) setWarm(true)
   // Changing the key rebuilds the scene with a fresh renderer and GL context.
   const [sceneKey, setSceneKey] = useState(0)
-  const finishPrewarm = useCallback((warmed: boolean) => {
-    setWarm(true)
-    // A failed warm-up may leave the renderer stuck part-way through a frame, so start over
-    // with a fresh one; it is then built when the Race starts, as without pre-warm.
-    if (!warmed) setSceneKey((key) => key + 1)
-  }, [])
-  const prewarming = !active && !warm && renderer === '3d'
-
-  // The scene only follows the Roster during a Race, so typing names never rebuilds it.
-  const [sceneRoster, setSceneRoster] = useState(state.roster)
-  if (active && sceneRoster !== state.roster) setSceneRoster(state.roster)
-
-  // The Start button is gone once the Race begins; give keyboard users the one control that remains.
-  useEffect(() => {
-    if (active) skipButton.current?.focus()
-  }, [active])
 
   // Both renderers read the same session clock, so switching mid-Race keeps the same Winner and timing.
   function fallBackTo2D() {
@@ -62,22 +61,52 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
     setFellBack(true)
   }
 
+  // The 2D renderer has nothing to prepare; it can show something immediately.
+  useEffect(() => {
+    if (preparing && renderer === '2d') session.stageReady(performance.now())
+  }, [preparing, renderer, session])
+
+  // A safety net: whatever kept 3D from becoming ready, the Race must still start.
+  useEffect(() => {
+    if (!preparing) return
+    const id = setTimeout(() => {
+      if (renderer === '3d') fallBackTo2D()
+      session.stageReady(performance.now())
+    }, PREPARE_TIMEOUT_MS)
+    return () => clearTimeout(id)
+  }, [preparing, renderer, session])
+
+  // Delayed so a `preparing` that resolves quickly (Play Again, shaders already cached) never
+  // flashes a loading message.
+  const [showPreparingMessage, setShowPreparingMessage] = useState(false)
+  if (!preparing && showPreparingMessage) setShowPreparingMessage(false)
+  useEffect(() => {
+    if (!preparing) return
+    const id = setTimeout(() => setShowPreparingMessage(true), PREPARE_MESSAGE_DELAY_MS)
+    return () => clearTimeout(id)
+  }, [preparing])
+
+  // The Start button is gone as soon as a Race is drawn; give keyboard users the one control
+  // that remains, as soon as there is something to skip to.
+  useEffect(() => {
+    if (shown) skipButton.current?.focus()
+  }, [shown])
+
   // The scene's GL context lives for the rest of the page, and browsers reclaim idle contexts
-  // (GPU reset, backgrounded phone). Only a loss during a Race needs 2D; between Races the
-  // scene is rebuilt with a fresh context and warmed again. The listener is registered once,
-  // so it reads `active` through a ref.
+  // (GPU reset, backgrounded phone). Only a loss during a Race needs 2D; otherwise (hidden
+  // between Races, or still `preparing`) the scene is rebuilt with a fresh context and prepares
+  // again. The listener is registered once, so it reads `active` through a ref.
   const activeRef = useRef(active)
   useEffect(() => {
     activeRef.current = active
   }, [active])
-  const handleContextLost = useCallback(() => {
+  function handleContextLost() {
     if (activeRef.current) {
       fallBackTo2D()
       return
     }
-    setWarm(false)
     setSceneKey((key) => key + 1)
-  }, [])
+  }
 
   useEffect(() => {
     if (!canSkip) return
@@ -89,50 +118,39 @@ export function RaceStage({ state, session, themeId, reducedMotion, active }: Ra
   }, [canSkip, session])
 
   return (
-    <section
-      className={prewarming ? 'race race--prewarm' : 'race'}
-      aria-labelledby="race-title"
-      hidden={!active && !prewarming}
-      aria-hidden={prewarming || undefined}
-      inert={prewarming}
-    >
+    <section className="race" aria-labelledby="race-title" hidden={!shown}>
       <h2 id="race-title" className="race__title">
         {copy.sceneTitle}
       </h2>
       <div className="race__stage">
-        {/* The still 3D scene only renders on change, so something else must keep the clock moving. */}
-        {active && renderer === '3d' && reducedMotion && <SessionTicker session={session} />}
         {renderer === '3d' ? (
           <ErrorBoundary
             fallback={active && <RaceCanvas2D session={session} description={description} still={reducedMotion} />}
             onError={fallBackTo2D}
           >
-            <Suspense
-              fallback={
-                <div className="race__loading">
-                  {active && <SessionTicker session={session} />}
-                  {copy.loading3d}
-                </div>
-              }
-            >
+            <Suspense fallback={<StageLoading />}>
               <RaceScene3D
                 key={sceneKey}
                 session={session}
-                roster={sceneRoster}
+                roster={state.roster}
                 themeId={themeId}
                 reducedMotion={reducedMotion}
                 active={active}
-                prewarm={prewarming}
-                onPrewarmed={finishPrewarm}
+                preparing={preparing}
+                onStageReady={() => session.stageReady(performance.now())}
+                onPrepareFailed={fallBackTo2D}
                 description={description}
                 onContextLost={handleContextLost}
               />
             </Suspense>
+            {preparing && showPreparingMessage && <StageLoading />}
           </ErrorBoundary>
         ) : (
           // The 2D canvas has nothing expensive to keep, so it only exists during a Race.
           active && <RaceCanvas2D session={session} description={description} still={reducedMotion} />
         )}
+        {/* The still 3D scene only renders on change, so something else must keep the clock moving. */}
+        {active && renderer === '3d' && reducedMotion && <SessionTicker session={session} />}
         {active && labelMode(state.roster.length) === 'number' && <LeaderBoard session={session} roster={state.roster} />}
         <div className="race__countdown" aria-live="assertive">
           {state.countdown !== null && (

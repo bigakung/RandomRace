@@ -11,10 +11,11 @@ type ScenePrewarmProps = {
 }
 
 /**
- * Does the first Race's expensive GPU work ahead of time, while the Roster screen is open:
- * compiles every shader (without blocking the page where the browser supports parallel
- * compilation) and draws a single frame. It never starts a frame loop, so it costs one
- * burst of work and nothing afterwards.
+ * Runs once during the session's `preparing` phase, before the countdown clock starts
+ * (ADR-0003): compiles every shader (without blocking the page where the browser supports
+ * parallel compilation) and draws a single frame. It never starts a frame loop, so it costs
+ * one burst of work and nothing afterwards — and nothing runs before the user has committed
+ * to a Race.
  */
 export function ScenePrewarm({ onDone }: ScenePrewarmProps) {
   const gl = useThree((state) => state.gl)

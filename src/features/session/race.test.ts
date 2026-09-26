@@ -15,7 +15,8 @@ const RACE_END = COUNTDOWN_MS + DEFAULT_RACE_DURATION_MS
 function startedSession(count: number, seed: number) {
   const session = createPickerSession({ rng: createSeededRng(seed) })
   session.addNames(Array.from({ length: count }, (_, i) => `p${i + 1}`).join('\n'))
-  session.start(0)
+  session.start()
+  session.stageReady(0)
   return session
 }
 
@@ -135,6 +136,23 @@ describe('Race flow', () => {
   })
 
   describe('skip', () => {
+    it('jumps from preparing to finished with the already-drawn Winner (skip, not cancel)', () => {
+      const session = createPickerSession({ rng: createSeededRng(10) })
+      session.addNames('p1\np2\np3\np4\np5')
+      session.start()
+      const drawn = session.getState().winner
+      expect(session.getState().phase).toBe('preparing')
+      session.skip(0)
+      expect(session.getState()).toMatchObject({ phase: 'finished', countdown: null })
+      expect(session.getState().winner).toBe(drawn)
+      const winnerLane = (drawn?.number ?? 0) - 1
+      // The countdown clock never started (stageReady was never called), so tick() must still
+      // move finished → result on ticks alone, and the Winner's Lane is at the finish line.
+      expect(session.laneProgress(0)[winnerLane]).toBe(1)
+      session.tick(FINISH_HOLD_MS)
+      expect(session.getState().phase).toBe('result')
+    })
+
     it('jumps from the countdown to finished with the same Winner', () => {
       const session = startedSession(5, 7)
       const drawn = session.getState().winner
@@ -170,7 +188,7 @@ describe('Race flow', () => {
     session.removeParticipant(1)
     session.clearRoster()
     expect(session.renameParticipant(2, 'x')).toBe(false)
-    session.start(10)
+    session.start()
     expect(session.getState().roster.map((p) => p.name)).toEqual(['p1', 'p2', 'p3'])
     expect(session.getState().phase).toBe('countdown')
   })

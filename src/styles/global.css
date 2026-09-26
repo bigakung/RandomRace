@@ -83,15 +83,6 @@ body {
   display: none;
 }
 
-/* Before the first Race: laid out at full size so the 3D scene can pre-warm, but invisible
-   and out of the page flow. */
-.race--prewarm {
-  position: fixed;
-  inset: 0 0 auto;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .race__title {
   margin: 0;
   text-align: center;
@@ -103,6 +94,9 @@ body {
 
 .race__stage {
   position: relative;
+  /* The loading overlay is absolutely positioned (to sit on top of the canvas beneath it), so
+     the stage needs its own height instead of relying on an in-flow child for it. */
+  min-height: clamp(320px, 68vh, 720px);
   border: 3px solid var(--color-gold);
   border-radius: var(--radius);
   overflow: hidden;
@@ -130,8 +124,33 @@ body {
 .race__loading {
   display: grid;
   place-items: center;
+  gap: 6px;
   color: #fff8e8;
   font-weight: 600;
+  /* Overlays the (invisible) 3D canvas while it prepares; alone, it fills .race__stage the same way. */
+  position: absolute;
+  inset: 0;
+}
+
+/* An animated ellipsis so a longer wait doesn't read as stuck; reduced motion freezes it via
+   the global animation override above. */
+.race__loading-dots::after {
+  content: '...';
+  display: inline-block;
+  width: 1.2em;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  animation: race-loading-dots 1.4s steps(4) infinite;
+}
+
+@keyframes race-loading-dots {
+  from {
+    width: 0;
+  }
+  to {
+    width: 1.2em;
+  }
 }
 
 .leaders {

@@ -35,7 +35,7 @@ export function PickerScreen({ state, session, focusRoster }: PickerScreenProps)
         <button
           type="button"
           className="button button--primary"
-          onClick={() => session.start(performance.now())}
+          onClick={() => session.start()}
           aria-disabled={notEnough}
           aria-describedby={notEnough ? 'start-hint' : undefined}
         >
