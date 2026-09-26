@@ -170,11 +170,6 @@ export function followRig(laneCount: number, aspect: number, fovDeg: number): Fo
   return { offset: subtract(position, target), lookY: target[1], lookZ: target[2], windowHalf }
 }
 
-export function framingAround({ offset, lookY, lookZ }: FollowRig, centerX: number): CameraFraming {
-  const target: Vec3 = [centerX, lookY, lookZ]
-  return { position: [centerX + offset[0], lookY + offset[1], lookZ + offset[2]], target }
-}
-
 /**
  * Where along the river the camera should look: between the rearmost boat and the Leader,
  * but never so far back that the Leader leaves the screen, and settling before the finish

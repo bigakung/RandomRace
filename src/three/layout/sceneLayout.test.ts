@@ -6,14 +6,20 @@ import {
   START_X,
   followCenterX,
   followRig,
-  framingAround,
   labelMode,
   laneLayout,
   projectToNdc,
   trackX,
+  type CameraFraming,
+  type FollowRig,
 } from './sceneLayout'
 
 const FOV_DEG = 45
+
+/** Where RaceCamera puts the camera mid-Race (no zoom, looking at the rig's own depth). */
+function framingAround({ offset, lookY, lookZ }: FollowRig, centerX: number): CameraFraming {
+  return { position: [centerX + offset[0], lookY + offset[1], lookZ + offset[2]], target: [centerX, lookY, lookZ] }
+}
 
 describe('laneLayout', () => {
   it.each([2, 16, 50])('spaces %i Lanes evenly without overlap, centred on the river', (count) => {
