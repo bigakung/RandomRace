@@ -104,8 +104,7 @@ body {
 }
 
 .race__canvas,
-.race__scene,
-.race__loading {
+.race__scene {
   display: block;
   width: 100%;
   height: clamp(320px, 68vh, 720px);
@@ -127,7 +126,9 @@ body {
   gap: 6px;
   color: #fff8e8;
   font-weight: 600;
-  /* Overlays the (invisible) 3D canvas while it prepares; alone, it fills .race__stage the same way. */
+  /* Overlays the (invisible) 3D canvas while it prepares, or fills .race__stage alone (the
+     Suspense fallback, before the chunk has even loaded); no explicit size of its own, so
+     `inset` isn't fighting a `height` for it — .race__stage's min-height gives it one either way. */
   position: absolute;
   inset: 0;
 }
