@@ -2,7 +2,7 @@
 
 The Race scene moves to a real-time 3D renderer built on Three.js, React Three Fiber and Drei, loaded lazily so the Roster screen stays light. Both the 3D renderer and the original 2D canvas renderer only read `laneProgress(now)` from `PickerSession`; neither decides anything about the outcome (ADR-0001). The 2D renderer is deliberately kept — not dead code — as the fallback when WebGL is unavailable or the context is lost mid-Race, so school machines without GPU acceleration can still run a Race with the same Winner.
 
-See [ADR-0003](./0003-countdown-waits-for-stage-ready.md) for how a renderer signals it is ready before the countdown clock starts; it only ever picks *when*, never the outcome.
+See [ADR-0003](./0003-countdown-waits-for-stage-ready.md) for how a renderer signals it is ready before the countdown clock starts; it only ever picks *when*, never the outcome. See [ADR-0004](./0004-surface-is-theme-provided.md) for how the 3D renderer stays generic across Themes: it knows Lanes and Vehicles, and reads the ground only through a Theme-provided `Surface`.
 
 ## Consequences
 

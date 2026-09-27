@@ -20,7 +20,7 @@ function leaders(progress: readonly number[]): number[] {
  * few times per second and re-renders only when the order actually changes. It is display
  * only (never a ranking) and is not a live region, so screen readers are not flooded.
  */
-export function LeaderBoard({ session, roster }: { session: PickerSession; roster: Roster }) {
+export function LeaderBoard({ session, roster, label }: { session: PickerSession; roster: Roster; label: string }) {
   const [top, setTop] = useState<number[]>([])
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function LeaderBoard({ session, roster }: { session: PickerSession; roste
   }, [session])
 
   return (
-    <aside className="leaders" aria-label={copy.leadersLabel}>
+    <aside className="leaders" aria-label={label}>
       <h3 className="leaders__title">{copy.leadersTitle}</h3>
       <ol className="leaders__list">
         {top.map((lane) => {

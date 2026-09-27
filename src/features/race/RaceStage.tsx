@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { copy } from '../../copy/th'
-import type { ThemeId } from '../../themes/registry'
+import { THEME_COPY, type ThemeId } from '../../themes/registry'
 import { isWebGLAvailable } from '../../three/webgl'
 import type { PickerSession, SessionState } from '../session/pickerSession'
 import { labelMode } from '../../three/layout/sceneLayout'
@@ -31,10 +31,10 @@ const PREPARE_MESSAGE_DELAY_MS = 300
 
 /** The loading message shown while nothing can be displayed yet, with a text status for
  * screen readers and an animated affordance so a longer wait doesn't read as stuck. */
-function StageLoading() {
+function StageLoading({ message }: { message: string }) {
   return (
     <div className="race__loading" role="status">
-      {copy.loading3d}
+      {message}
       <span className="race__loading-dots" aria-hidden="true" />
     </div>
   )
@@ -49,7 +49,8 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
   const active = state.phase === 'countdown' || state.phase === 'racing' || state.phase === 'finished'
   const shown = preparing || active
   const canSkip = preparing || state.phase === 'countdown' || state.phase === 'racing'
-  const description = copy.raceLabel(state.roster.length)
+  const themeCopy = THEME_COPY[themeId]
+  const description = themeCopy.raceLabel(state.roster.length)
   const skipButton = useRef<HTMLButtonElement>(null)
 
   // Changing the key rebuilds the scene with a fresh renderer and GL context.
@@ -120,7 +121,7 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
   return (
     <section className="race" aria-labelledby="race-title" hidden={!shown}>
       <h2 id="race-title" className="race__title">
-        {copy.sceneTitle}
+        {themeCopy.sceneTitle}
       </h2>
       <div className="race__stage">
         {renderer === '3d' ? (
@@ -128,7 +129,7 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
             fallback={active && <RaceCanvas2D session={session} description={description} still={reducedMotion} />}
             onError={fallBackTo2D}
           >
-            <Suspense fallback={<StageLoading />}>
+            <Suspense fallback={<StageLoading message={themeCopy.loadingMessage} />}>
               <RaceScene3D
                 key={sceneKey}
                 session={session}
@@ -143,7 +144,7 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
                 onContextLost={handleContextLost}
               />
             </Suspense>
-            {preparing && showPreparingMessage && <StageLoading />}
+            {preparing && showPreparingMessage && <StageLoading message={themeCopy.loadingMessage} />}
           </ErrorBoundary>
         ) : (
           // The 2D canvas has nothing expensive to keep, so it only exists during a Race.
@@ -151,7 +152,9 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
         )}
         {/* The still 3D scene only renders on change, so something else must keep the clock moving. */}
         {active && renderer === '3d' && reducedMotion && <SessionTicker session={session} />}
-        {active && labelMode(state.roster.length) === 'number' && <LeaderBoard session={session} roster={state.roster} />}
+        {active && labelMode(state.roster.length) === 'number' && (
+          <LeaderBoard session={session} roster={state.roster} label={themeCopy.leadersLabel} />
+        )}
         <div className="race__countdown" aria-live="assertive">
           {state.countdown !== null && (
             <span key={String(state.countdown)} className="race__countdown-value">

@@ -4,17 +4,17 @@ export type QualityLevel = 'low' | 'medium' | 'high'
 export type QualitySettings = {
   maxPixelRatio: number
   shadows: boolean
-  waterSegments: number
-  animatedWater: boolean
+  surfaceSegments: number
+  animatedSurface: boolean
   sceneryDetail: 'low' | 'full'
   /** Gold sparkles + confetti around the Winner. */
   celebrationParticles: number
 }
 
 export const qualitySettings: Record<QualityLevel, QualitySettings> = {
-  low: { maxPixelRatio: 1, shadows: false, waterSegments: 48, animatedWater: false, sceneryDetail: 'low', celebrationParticles: 60 },
-  medium: { maxPixelRatio: 1.5, shadows: true, waterSegments: 120, animatedWater: true, sceneryDetail: 'full', celebrationParticles: 240 },
-  high: { maxPixelRatio: 2, shadows: true, waterSegments: 200, animatedWater: true, sceneryDetail: 'full', celebrationParticles: 400 },
+  low: { maxPixelRatio: 1, shadows: false, surfaceSegments: 48, animatedSurface: false, sceneryDetail: 'low', celebrationParticles: 60 },
+  medium: { maxPixelRatio: 1.5, shadows: true, surfaceSegments: 120, animatedSurface: true, sceneryDetail: 'full', celebrationParticles: 240 },
+  high: { maxPixelRatio: 2, shadows: true, surfaceSegments: 200, animatedSurface: true, sceneryDetail: 'full', celebrationParticles: 400 },
 }
 
 export type DeviceSignals = {

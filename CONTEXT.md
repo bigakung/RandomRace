@@ -17,11 +17,11 @@ One round of picking: a single random draw of a **Winner** from the current **Ro
 _Avoid_: Game, round, draw (as the noun for the whole thing)
 
 **Lane**:
-The strip of river belonging to one **Participant** during a Race.
-_Avoid_: Track, row
+The strip of the course belonging to one **Participant** during a Race — a stretch of river in the Ayutthaya Theme, a dirt track in the elephant Theme.
+_Avoid_: Track, row, river (as if every Theme were water)
 
 **Vehicle**:
-The theme-specific thing that carries a Participant along its Lane — a boat in the Ayutthaya theme, an elephant in a future elephant theme.
+The theme-specific thing that carries a Participant along its Lane — a boat in the Ayutthaya Theme, an elephant in the elephant Theme.
 _Avoid_: Boat (outside Ayutthaya-specific art), racer, avatar
 
 **Theme**:

@@ -23,7 +23,7 @@ function framingAround({ offset, lookY, lookZ }: FollowRig, centerX: number): Ca
 
 describe('laneLayout', () => {
   it.each([2, 16, 50])('spaces %i Lanes evenly without overlap, centred on the river', (count) => {
-    const { laneZ, riverHalfWidth } = laneLayout(count)
+    const { laneZ, courseHalfWidth } = laneLayout(count)
     expect(laneZ).toHaveLength(count)
     for (let i = 1; i < count; i += 1) {
       expect((laneZ[i] ?? 0) - (laneZ[i - 1] ?? 0)).toBeCloseTo(LANE_SPACING)
@@ -31,11 +31,11 @@ describe('laneLayout', () => {
     const first = laneZ[0] ?? 0
     const last = laneZ[count - 1] ?? 0
     expect(first + last).toBeCloseTo(0)
-    expect(riverHalfWidth).toBeGreaterThanOrEqual(Math.max(Math.abs(first), Math.abs(last)) + LANE_SPACING / 2)
+    expect(courseHalfWidth).toBeGreaterThanOrEqual(Math.max(Math.abs(first), Math.abs(last)) + LANE_SPACING / 2)
   })
 
   it('widens the river as Lanes are added', () => {
-    expect(laneLayout(50).riverHalfWidth).toBeGreaterThan(laneLayout(2).riverHalfWidth)
+    expect(laneLayout(50).courseHalfWidth).toBeGreaterThan(laneLayout(2).courseHalfWidth)
   })
 })
 
@@ -58,7 +58,7 @@ describe('followRig', () => {
   it('looks down at the river from above, from the camera side of the Lanes', () => {
     const [, y, z] = followRig(8, 16 / 9, FOV_DEG).offset
     expect(y).toBeGreaterThan(0)
-    expect(z).toBeGreaterThan(laneLayout(8).riverHalfWidth)
+    expect(z).toBeGreaterThan(laneLayout(8).courseHalfWidth)
   })
 
   it('pulls back further for more Lanes', () => {

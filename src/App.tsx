@@ -9,6 +9,7 @@ import { ResultScreen } from './features/result/ResultScreen'
 import { usePickerSession } from './features/session/usePickerSession'
 import { SoundToggle } from './features/sound/SoundToggle'
 import { useRaceSound } from './features/sound/useRaceSound'
+import { THEME_COPY } from './themes/registry'
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion'
 
 export function App() {
@@ -16,7 +17,10 @@ export function App() {
   const [initial] = useState(() => store.load())
   const [state, session] = usePickerSession(initial)
   const { soundOn, setSoundOn, soundSupported } = useRaceSound(session, initial.soundOn)
-  const themeId = initial.themeId
+  // Cosmetic only, like soundOn — the Theme never changes how a Winner is chosen or the Race
+  // moves, so it lives here rather than in PickerSession. Only shown as a choice on the Roster
+  // screen, so it cannot change mid-Race.
+  const [themeId, setThemeId] = useState(initial.themeId)
   useSavePreferences(store, session, soundOn, themeId)
   const reducedMotion = usePrefersReducedMotion()
   useEffect(() => session.setReducedMotion(reducedMotion), [session, reducedMotion])
@@ -45,10 +49,12 @@ export function App() {
           <span className="app__title-main">{copy.appTitle}</span>
           <span className="app__title-sub">{copy.appSubtitle}</span>
         </h1>
-        {!racing && <p className="app__tagline">{copy.tagline}</p>}
+        {!racing && <p className="app__tagline">{THEME_COPY[themeId].tagline}</p>}
       </header>
 
-      {state.phase === 'input' && <PickerScreen state={state} session={session} focusRoster={focusRoster} />}
+      {state.phase === 'input' && (
+        <PickerScreen state={state} session={session} focusRoster={focusRoster} themeId={themeId} onThemeChange={setThemeId} />
+      )}
       {raceStageMounted && <RaceStage state={state} session={session} themeId={themeId} reducedMotion={reducedMotion} />}
       {state.phase === 'result' && state.winner && (
         <ResultScreen

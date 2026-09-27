@@ -6,16 +6,16 @@ import { FINISH_X, START_X } from '../layout/sceneLayout'
 type SceneLightingProps = {
   lighting: LightingPreset
   shadows: boolean
-  riverHalfWidth: number
+  courseHalfWidth: number
 }
 
-export function SceneLighting({ lighting, shadows, riverHalfWidth }: SceneLightingProps) {
+export function SceneLighting({ lighting, shadows, courseHalfWidth }: SceneLightingProps) {
   const sunPosition = useMemo(() => {
     const [x, y, z] = lighting.sunDirection
     return new THREE.Vector3(x, y, z).normalize().multiplyScalar(80)
   }, [lighting.sunDirection])
   // Shadow camera just covers the track so the shadow map resolution is spent where boats are.
-  const halfExtent = Math.max((FINISH_X - START_X) / 2 + 6, riverHalfWidth + 4)
+  const halfExtent = Math.max((FINISH_X - START_X) / 2 + 6, courseHalfWidth + 4)
 
   return (
     <>

@@ -1,16 +1,20 @@
 import { copy } from '../../copy/th'
+import type { ThemeId } from '../../themes/registry'
 import type { PickerSession, SessionState } from '../session/pickerSession'
 import { RaceDurationPicker } from './RaceDurationPicker'
 import { MIN_PARTICIPANTS } from './roster'
 import { RosterEditor } from './RosterEditor'
+import { ThemePicker } from './ThemePicker'
 
 type PickerScreenProps = {
   state: SessionState
   session: PickerSession
   focusRoster: boolean
+  themeId: ThemeId
+  onThemeChange: (themeId: ThemeId) => void
 }
 
-export function PickerScreen({ state, session, focusRoster }: PickerScreenProps) {
+export function PickerScreen({ state, session, focusRoster, themeId, onThemeChange }: PickerScreenProps) {
   const notEnough = state.roster.length < MIN_PARTICIPANTS
 
   return (
@@ -31,6 +35,7 @@ export function PickerScreen({ state, session, focusRoster }: PickerScreenProps)
         </p>
       )}
       <RaceDurationPicker value={state.raceDurationMs} onChange={session.setRaceDuration} />
+      <ThemePicker value={themeId} onChange={onThemeChange} />
       <div className="app__start">
         <button
           type="button"

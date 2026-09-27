@@ -9,7 +9,6 @@ import { WinnerEffect } from './effects/WinnerEffect'
 import { laneLayout } from './layout/sceneLayout'
 import { chooseQuality, lowerQuality, qualitySettings, readDeviceSignals } from './quality/quality'
 import { FinishGate } from './scene/FinishGate'
-import { River } from './scene/River'
 import { SceneLighting } from './scene/SceneLighting'
 import { SkyDome } from './scene/SkyDome'
 import { ScenePrewarm } from './ScenePrewarm'
@@ -53,9 +52,9 @@ export default function RaceScene3D({
   const lighting = theme.config.lighting[theme.config.defaultTimeOfDay] ?? theme.config.lighting.sunset
   const [quality, setQuality] = useState(() => chooseQuality(readDeviceSignals()))
   const settings = qualitySettings[quality]
-  const { riverHalfWidth, laneZ } = useMemo(() => laneLayout(roster.length), [roster.length])
+  const { courseHalfWidth, laneZ } = useMemo(() => laneLayout(roster.length), [roster.length])
 
-  const animated = settings.animatedWater && !reducedMotion
+  const animated = settings.animatedSurface && !reducedMotion
 
   // The canvas is reused across Races and still holds the last Race's final frame; keep it
   // invisible from each activation until the new Race's first frame is drawn.
@@ -102,26 +101,26 @@ export default function RaceScene3D({
         <SessionInvalidator session={session} active={active} onDemand={reducedMotion} onFreshFrame={markFresh} />
         <RaceCamera session={session} laneCount={roster.length} still={reducedMotion} />
         <SkyDome lighting={lighting} />
-        <SceneLighting lighting={lighting} shadows={settings.shadows} riverHalfWidth={riverHalfWidth} />
-        <River
+        <SceneLighting lighting={lighting} shadows={settings.shadows} courseHalfWidth={courseHalfWidth} />
+        <theme.Surface
           lighting={lighting}
-          riverHalfWidth={riverHalfWidth}
-          segments={settings.waterSegments}
+          courseHalfWidth={courseHalfWidth}
+          segments={settings.surfaceSegments}
           animated={animated}
         />
         <theme.Environment
-          riverHalfWidth={riverHalfWidth}
+          courseHalfWidth={courseHalfWidth}
           detail={settings.sceneryDetail}
           castShadow={settings.shadows}
           animated={animated}
         />
-        <FinishGate riverHalfWidth={riverHalfWidth} />
+        <FinishGate courseHalfWidth={courseHalfWidth} />
         <VehicleFleet
           session={session}
           roster={roster}
           theme={theme}
           castShadow={settings.shadows}
-          animatedWater={animated}
+          animatedSurface={animated}
           still={reducedMotion}
         />
         <WinnerEffect

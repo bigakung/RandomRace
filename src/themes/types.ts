@@ -13,9 +13,12 @@ export type LightingPreset = {
   hemisphereIntensity: number
   ambientIntensity: number
   fogColor: string
-  water: string
-  riverbed: string
-  bank: string
+  /** The Surface's own colour (translucent water for Ayutthaya, packed dirt for a land Theme). */
+  surfacePrimary: string
+  /** A darker layer under/within the Surface (a riverbed seen through water, a rut in dirt). */
+  surfaceShadow: string
+  /** The ground beyond the course, past the widest Lane (far bank, roadside verge, …). */
+  surroundings: string
 }
 
 export type ThemeConfig = {

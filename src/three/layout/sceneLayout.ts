@@ -23,10 +23,10 @@ const SCREEN_MARGIN = 0.9
 const CAMERA_PITCH_DEG = 14
 const CAMERA_YAW_DEG = -8
 
-export function laneLayout(laneCount: number): { laneZ: number[]; riverHalfWidth: number } {
+export function laneLayout(laneCount: number): { laneZ: number[]; courseHalfWidth: number } {
   const laneZ = Array.from({ length: laneCount }, (_, lane) => (lane - (laneCount - 1) / 2) * LANE_SPACING)
   const outermost = ((laneCount - 1) / 2) * LANE_SPACING
-  return { laneZ, riverHalfWidth: outermost + LANE_SPACING / 2 + BANK_MARGIN }
+  return { laneZ, courseHalfWidth: outermost + LANE_SPACING / 2 + BANK_MARGIN }
 }
 
 /** X position of a Vehicle's bow for a Lane progress in [0, 1]. */
@@ -161,7 +161,7 @@ export function followRig(laneCount: number, aspect: number, fovDeg: number): Fo
   const windowHalf = aspect < 1 ? PORTRAIT_WINDOW_HALF : FOLLOW_WINDOW_HALF
   // Frame the far-bank temples too: the river sits lower in the picture, with the city behind
   // it, instead of an empty foreground bank.
-  const farBank = -(laneLayout(laneCount).riverHalfWidth + SCENERY_DEPTH)
+  const farBank = -(laneLayout(laneCount).courseHalfWidth + SCENERY_DEPTH)
   const extra: Vec3[] = [
     [-windowHalf, SCENERY_HEIGHT, farBank],
     [windowHalf, SCENERY_HEIGHT, farBank],

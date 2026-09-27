@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { FINISH_X, laneLayout } from '../../../three/layout/sceneLayout'
 import { planScenery, type Placement } from './placement'
 
-const narrow = laneLayout(2).riverHalfWidth
-const widest = laneLayout(50).riverHalfWidth
+const narrow = laneLayout(2).courseHalfWidth
+const widest = laneLayout(50).courseHalfWidth
 
 function everyPlacement(plan: ReturnType<typeof planScenery>): Placement[] {
   return [

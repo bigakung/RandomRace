@@ -6,8 +6,8 @@ import { planScenery } from './placement'
 import { Bridge, CityWall, ThaiHouses, Vegetation } from './Settlement'
 
 /** A small reconstructed stretch of Ayutthaya around the race course. */
-export function AyutthayaEnvironment({ riverHalfWidth, detail, castShadow, animated }: EnvironmentProps) {
-  const plan = useMemo(() => planScenery(riverHalfWidth, detail), [riverHalfWidth, detail])
+export function AyutthayaEnvironment({ courseHalfWidth, detail, castShadow, animated }: EnvironmentProps) {
+  const plan = useMemo(() => planScenery(courseHalfWidth, detail), [courseHalfWidth, detail])
   return (
     // Materials are shared for the page's lifetime; don't let unmounting dispose them.
     <group dispose={null}>

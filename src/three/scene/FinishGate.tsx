@@ -11,8 +11,8 @@ const PENNANT_COLORS = ['#c0392b', '#e0b02a']
  * A wooden gate with a gold-trimmed beam and a string of red-and-gold pennants spanning the
  * river at the finish line. Pennants face the camera (+Z) so they read from the default view.
  */
-export function FinishGate({ riverHalfWidth }: { riverHalfWidth: number }) {
-  const span = riverHalfWidth * 2
+export function FinishGate({ courseHalfWidth }: { courseHalfWidth: number }) {
+  const span = courseHalfWidth * 2
   const pennant = useMemo(() => {
     const shape = new THREE.Shape()
     shape.moveTo(-0.35, 0)
@@ -42,7 +42,7 @@ export function FinishGate({ riverHalfWidth }: { riverHalfWidth: number }) {
     <group>
       <group position-x={FINISH_X}>
         {[-1, 1].map((side) => (
-          <group key={side} position-z={side * riverHalfWidth}>
+          <group key={side} position-z={side * courseHalfWidth}>
             <mesh position-y={GATE_HEIGHT / 2 - 0.5} castShadow>
               <cylinderGeometry args={[0.18, 0.22, GATE_HEIGHT + 1, 8]} />
               <meshStandardMaterial color="#6b3b1f" roughness={0.9} />
