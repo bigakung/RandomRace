@@ -21,7 +21,6 @@ const LABEL_HEIGHT = 2.2
 /** Keep framed points slightly inside the screen edge. */
 const SCREEN_MARGIN = 0.9
 const CAMERA_PITCH_DEG = 14
-const CAMERA_YAW_DEG = -8
 
 export function laneLayout(laneCount: number): { laneZ: number[]; courseHalfWidth: number } {
   const laneZ = Array.from({ length: laneCount }, (_, lane) => (lane - (laneCount - 1) / 2) * LANE_SPACING)
@@ -63,10 +62,11 @@ export function projectToNdc(point: Vec3, { position, target }: CameraFraming, a
   return [dot(relative, right) / (depth * tanHalfV * aspect), dot(relative, up) / (depth * tanHalfV), depth]
 }
 
+/** Purely in the Y-Z plane: elevated, looking squarely across the Lanes, no diagonal skew
+ * along the direction of travel (X). */
 function cameraDirection(pitchDeg: number): Vec3 {
   const pitch = (pitchDeg * Math.PI) / 180
-  const yaw = (CAMERA_YAW_DEG * Math.PI) / 180
-  return [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)]
+  return [0, Math.sin(pitch), Math.cos(pitch)]
 }
 
 /**

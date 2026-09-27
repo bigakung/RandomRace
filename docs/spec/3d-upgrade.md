@@ -10,7 +10,7 @@ The Race works and is fair, but it is drawn as flat shapes on a 2D canvas. For a
 
 ## Solution
 
-After the user presses "เริ่มแข่ง", the Race is shown as a real-time 3D scene: a stylised low-poly reconstruction of a stretch of the Chao Phraya at Ayutthaya at sunset, with temples, chedi, city walls, Thai houses, trees, flags and a decorated finish gate. Every **Participant** is a 3D traditional Thai boat (the **Vehicle** of the Ayutthaya **Theme**) with its name floating above it, bobbing on animated water. A cinematic camera looks diagonally across the river, frames every **Lane**, and glides along with the Race. The pre-drawn **Winner** still always crosses first; when it does, the camera eases in, the boat is highlighted and golden particles and confetti celebrate before the result screen appears. The Roster screen stays a light HTML page that opens instantly; the 3D scene loads in the background while names are typed. Devices without WebGL get the existing 2D Race with the same fair result. Rendering quality adapts automatically; reduced-motion users get a still 3D scene and the result immediately.
+After the user presses "เริ่มแข่ง", the Race is shown as a real-time 3D scene: a stylised low-poly reconstruction of a stretch of the Chao Phraya at Ayutthaya at sunset, with temples, chedi, city walls, Thai houses, trees, flags and a decorated finish gate. Every **Participant** is a 3D traditional Thai boat (the **Vehicle** of the Ayutthaya **Theme**) with its name floating above it, bobbing on animated water. A cinematic camera looks squarely across the river, frames every **Lane**, and glides along with the Race. The pre-drawn **Winner** still always crosses first; when it does, the camera eases in, the boat is highlighted and golden particles and confetti celebrate before the result screen appears. The Roster screen stays a light HTML page that opens instantly; the 3D scene loads in the background while names are typed. Devices without WebGL get the existing 2D Race with the same fair result. Rendering quality adapts automatically; reduced-motion users get a still 3D scene and the result immediately.
 
 ## User Stories
 
@@ -35,7 +35,7 @@ After the user presses "เริ่มแข่ง", the Race is shown as a rea
 16. As a host, I want quality changes, frame drops or switching to 2D mid-Race never to change the Winner or the Race timing, so that every device shows the same result.
 
 ### Camera and crowded Races
-17. As a viewer, I want a slightly elevated perspective camera looking diagonally across the river with temples in the background, so that I see both the Race and the scenery.
+17. As a viewer, I want a slightly elevated perspective camera looking squarely across the river with temples in the background, so that I see both the Race and the scenery.
 18. As a viewer, I want the camera to follow the Race smoothly without spinning or jerking, so that I am never disoriented.
 19. As a viewer, I want the Leader — and therefore the Winner at the finish — always kept in view, so that nobody misses the decisive moment.
 20. As a host with 2 Participants, I want a close, intimate framing, so that the Race is not lost in an empty river.
