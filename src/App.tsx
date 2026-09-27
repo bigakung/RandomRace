@@ -44,13 +44,17 @@ export function App() {
   return (
     <main className={racing ? 'app app--race' : 'app'}>
       <SoundToggle on={soundOn} supported={soundSupported} onChange={setSoundOn} />
-      <header className="app__header">
-        <h1 className="app__title">
-          <span className="app__title-main">{copy.appTitle}</span>
-          <span className="app__title-sub">{copy.appSubtitle}</span>
-        </h1>
-        {!racing && <p className="app__tagline">{THEME_COPY[themeId].tagline}</p>}
-      </header>
+      {/* Dropped entirely (not just visually) during a Race so the stage can grow into the
+          space — the sound toggle and Skip button are enough chrome while racing. */}
+      {!racing && (
+        <header className="app__header">
+          <h1 className="app__title">
+            <span className="app__title-main">{copy.appTitle}</span>
+            <span className="app__title-sub">{copy.appSubtitle}</span>
+          </h1>
+          <p className="app__tagline">{THEME_COPY[themeId].tagline}</p>
+        </header>
+      )}
 
       {state.phase === 'input' && (
         <PickerScreen state={state} session={session} focusRoster={focusRoster} themeId={themeId} onThemeChange={setThemeId} />

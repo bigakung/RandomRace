@@ -120,7 +120,9 @@ export function RaceStage({ state, session, themeId, reducedMotion }: RaceStageP
 
   return (
     <section className="race" aria-labelledby="race-title" hidden={!shown}>
-      <h2 id="race-title" className="race__title">
+      {/* Kept for aria-labelledby (the section's accessible name) but never shown — the Race
+          screen has no chrome besides the sound toggle and Skip button. */}
+      <h2 id="race-title" className="visually-hidden">
         {themeCopy.sceneTitle}
       </h2>
       <div className="race__stage">

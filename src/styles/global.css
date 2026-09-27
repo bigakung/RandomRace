@@ -67,10 +67,6 @@ body {
   padding-top: 16px;
 }
 
-.app--race .app__title-main {
-  font-size: clamp(2rem, 7vw, 2.8rem);
-}
-
 .race {
   display: flex;
   flex-direction: column;
@@ -83,20 +79,12 @@ body {
   display: none;
 }
 
-.race__title {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  line-height: 1.4;
-  color: var(--color-lacquer);
-}
-
 .race__stage {
   position: relative;
   /* The loading overlay is absolutely positioned (to sit on top of the canvas beneath it), so
-     the stage needs its own height instead of relying on an in-flow child for it. */
-  min-height: clamp(320px, 68vh, 720px);
+     the stage needs its own height instead of relying on an in-flow child for it. Taller than
+     it would otherwise need to be, since the header and scene title are gone while it's shown. */
+  min-height: clamp(360px, 80vh, 820px);
   border: 3px solid var(--color-gold);
   border-radius: var(--radius);
   overflow: hidden;
@@ -107,7 +95,7 @@ body {
 .race__scene {
   display: block;
   width: 100%;
-  height: clamp(320px, 68vh, 720px);
+  height: clamp(360px, 80vh, 820px);
 }
 
 /* Shown while the 3D chunk loads and while the first frame compiles its shaders. */
